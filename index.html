@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Procuração Simples – Farmácia Popular do Brasil </title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--tx:#1d2733;--mut:#5b6877;--pri:#0b5cad;--err:#b3261e;--bd:#cdd5de}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.5}
+header{background:var(--pri);color:#fff;padding:28px 16px}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px}
+header .wrap{padding:0}
+h1{margin:0 0 8px;font-size:1.6rem}
+header p{margin:6px 0;max-width:75ch}
+main{padding:24px 0 48px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:20px;margin-bottom:20px}
+.info ul{margin:8px 0 0;padding-left:20px;color:var(--mut)}
+fieldset{border:0;padding:0;margin:0 0 8px}
+legend{font-weight:700;font-size:1.1rem;padding:0;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 16px}
+.f.wide{grid-column:1/-1}
+label{display:block;font-size:.85rem;font-weight:600;margin-bottom:3px}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:6px;font:inherit;background:#fff;color:var(--tx)}
+input:focus,select:focus{outline:2px solid var(--pri);outline-offset:0}
+.f.bad input,.f.bad select{border-color:var(--err)}
+small.err{display:none;color:var(--err);font-size:.8rem}
+.f.bad small.err{display:block}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
+button{font:inherit;font-weight:600;padding:11px 20px;border:0;border-radius:6px;background:var(--pri);color:#fff;cursor:pointer}
+button.alt{background:#fff;color:var(--pri);border:2px solid var(--pri)}
+#msg{margin-top:12px;color:var(--err);font-weight:600;min-height:1.4em}
+h2{font-size:1.2rem;margin:0 0 12px}
+.paper{background:#fff;border:1px solid var(--bd);box-shadow:0 2px 8px rgba(0,0,0,.08);padding:clamp(18px,5vw,56px);font-family:"Times New Roman",Times,serif;font-size:1rem;color:#000;line-height:1.6}
+.paper p{margin:0 0 .9em;text-align:left}
+.paper p.c{text-align:center}
+.paper .sig{width:70%;margin:56px auto 0;text-align:center;border-top:1px solid #000;padding-top:4px}
+footer{text-align:center;color:var(--mut);font-size:.85rem;padding-bottom:32px}
+@media print{
+  @page{size:A4;margin:25mm}
+  body{background:#fff}
+  header,footer,.card:not(.printable){display:none!important}
+  main{padding:0;max-width:none}.wrap{padding:0}
+  .card.printable{border:0;padding:0;margin:0;background:none}
+  .printable h2{display:none}
+  .paper{border:0;box-shadow:none;padding:0;font-size:12pt}
+}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>Procuração Simples – Farmácia Popular do Brasil</h1>
+<p>Gere o modelo de procuração (Anexo II) que permite a uma pessoa de confiança solicitar e retirar, em seu nome, medicamentos para asma, hipertensão e diabetes nos estabelecimentos credenciados ao Programa Farmácia Popular do Brasil (PFPB).</p>
+</div></header>
+
+<main class="wrap">
+<section class="card info">
+<strong>Como usar</strong>
+<ul>
+<li>Preencha todos os campos, obrigatórios, com os dados do paciente (outorgante) e do representante (outorgado).</li>
+<li>Confira a prévia do documento logo abaixo do formulário.</li>
+<li>Baixe em PDF ou Word, imprima e peça que o paciente assine no campo indicado.</li>
+<li>Confirme com a farmácia credenciada quais documentos adicionais (originais, cópias, receita) são exigidos.</li>
+<li>Privacidade: os dados são processados apenas no seu navegador e não são enviados nem armazenados.</li>
+</ul>
+</section>
+
+<form id="form" class="card" novalidate autocomplete="off">
+<div id="fields"></div>
+<fieldset>
+<legend>Local e data</legend>
+<div class="grid" id="loc"></div>
+</fieldset>
+<div class="actions">
+<button type="button" id="pdf">Baixar PDF</button>
+<button type="button" id="docx" class="alt">Baixar Word (.docx)</button>
+<button type="button" id="print" class="alt">Imprimir</button>
+</div>
+<div id="msg" role="alert"></div>
+</form>
+
+<section class="card printable">
+<h2>Prévia do documento</h2>
+<div class="paper" id="preview"></div>
+</section>
+</main>
+<footer>Ferramenta independente, sem vínculo oficial com o Ministério da Saúde. Modelo baseado no Anexo II do PFPB.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
+<script>
+const UFS="AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(" ");
+const CIVIL=["Solteiro(a)","Casado(a)","Divorciado(a)","Viúvo(a)","Separado(a)","União estável"];
+const MESES="janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro".split(" ");
+// [id, rótulo, tipo, largura total?]
+const FIELDS=[
+["nome","Nome completo","nome",1],["nac","Nacionalidade","text"],["civil","Estado civil","civil"],["prof","Profissão","text"],
+["cpf","CPF nº","cpf"],["rg","RG nº","text"],["orgao","Órgão expedidor","text"],
+["rua","Logradouro (rua, avenida etc.)","text",1],["bairro","Bairro","text"],["mun","Município","text"],
+["uf","Estado","uf"],["cep","CEP","cep"],["tel","Telefone","tel"]];
+const GROUPS=[["o","Outorgante (paciente)"],["p","Outorgado (representante legal)"]];
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function field(id,label,type,wide){
+  let ctl;
+  if(type==="civil") ctl=`<select id="${id}"><option value="">Selecione</option>${CIVIL.map(o=>`<option>${o}</option>`).join("")}</select>`;
+  else if(type==="uf") ctl=`<select id="${id}"><option value="">UF</option>${UFS.map(o=>`<option>${o}</option>`).join("")}</select>`;
+  else if(type==="date") ctl=`<input id="${id}" type="date">`;
+  else ctl=`<input id="${id}" type="text" ${type==="cpf"?'inputmode="numeric" placeholder="000.000.000-00"':type==="cep"?'inputmode="numeric" placeholder="00000-000"':type==="tel"?'inputmode="tel" placeholder="(00) 00000-0000"':""}>`;
+  return `<div class="f${wide?" wide":""}"><label for="${id}">${label}</label>${ctl}<small class="err" id="${id}_e"></small></div>`;
+}
+$("fields").innerHTML=GROUPS.map(([p,t])=>`<fieldset><legend>${t}</legend><div class="grid">${FIELDS.map(([k,l,ty,w])=>field(p+"_"+k,l,ty,w)).join("")}</div></fieldset>`).join("");
+$("loc").innerHTML=field("cidade","Cidade","text")+field("cuf","Estado","uf")+field("data","Data","date");
+(()=>{const d=new Date(),z=n=>String(n).padStart(2,"0");$("data").value=`${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`})();
+
+const IDS=[...GROUPS.flatMap(([p])=>FIELDS.map(f=>p+"_"+f[0])),"cidade","cuf","data"];
+const typeOf=id=>{const k=id.replace(/^[op]_/,"");const f=FIELDS.find(f=>f[0]===k);return f&&/^[op]_/.test(id)?f[2]:id==="cuf"?"uf":id==="data"?"date":"text"};
+
+// Máscaras
+const digits=s=>s.replace(/\D/g,"");
+const mask={
+  cpf:v=>digits(v).slice(0,11).replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2"),
+  cep:v=>digits(v).slice(0,8).replace(/(\d{5})(\d)/,"$1-$2"),
+  tel:v=>{const d=digits(v).slice(0,11);return d.length>10?d.replace(/(\d{2})(\d{5})(\d{1,4})/,"($1) $2-$3"):d.replace(/(\d{2})(\d{4})(\d{0,4})/,"($1) $2-$3").replace(/-$/,"").replace(/^(\d{2})$/,"($1")}
+};
+function cpfOk(c){
+  c=digits(c);if(c.length!==11||/^(\d)\1+$/.test(c))return false;
+  for(const n of[9,10]){let s=0;for(let i=0;i<n;i++)s+=c[i]*(n+1-i);const d=(s*10)%11%10;if(d!==+c[n])return false}
+  return true;
+}
+function check(id){
+  const el=$(id),v=el.value.trim(),t=typeOf(id);
+  let m="";
+  if(!v) m="Campo obrigatório.";
+  else if(t==="nome"&&v.split(/\s+/).length<2) m="Informe o nome completo.";
+  else if(t==="cpf"&&!cpfOk(v)) m="CPF inválido.";
+  else if(t==="cep"&&digits(v).length!==8) m="CEP deve ter 8 dígitos.";
+  else if(t==="tel"&&![10,11].includes(digits(v).length)) m="Telefone com DDD (10 ou 11 dígitos).";
+  else if(t==="date"&&isNaN(new Date(v))) m="Data inválida.";
+  el.parentElement.classList.toggle("bad",!!m);
+  $(id+"_e").textContent=m;
+  return !m;
+}
+function validateAll(){
+  const bad=IDS.filter(id=>!check(id));
+  if(bad.length){$("msg").textContent=`Corrija ${bad.length} campo(s) destacado(s) antes de exportar.`;$(bad[0]).focus();return false}
+  $("msg").textContent="";return true;
+}
+
+// Documento (usado na prévia, PDF e DOCX)
+function build(){
+  const g=id=>{const v=$(id).value.trim();return v||"__________"};
+  const pessoa=p=>`${g(p+"_nome")}, ${g(p+"_nac")}, ${g(p+"_civil")}, ${g(p+"_prof")}, portador(a) do CPF nº ${g(p+"_cpf")}, RG nº ${g(p+"_rg")}, expedido pelo ${g(p+"_orgao")}, residente e domiciliado(a) à ${g(p+"_rua")}, bairro ${g(p+"_bairro")}, município ${g(p+"_mun")}, Estado ${g(p+"_uf")}, CEP ${g(p+"_cep")}, telefone ${g(p+"_tel")},`;
+  const dv=$("data").value.split("-");
+  const dt=dv.length===3&&dv[0]?`${+dv[2]} de ${MESES[+dv[1]-1]} de ${dv[0]}`:"____ de __________ de 20___";
+  return[
+    {t:"ANEXO II",b:1,a:"c"},
+    {t:"INSTRUMENTO PARTICULAR DE PROCURAÇÃO",b:1,a:"c"},
+    {t:".",b:0},
+    {t:"Outorgante (paciente):",b:1},
+    {t:pessoa("o")},
+    {t:"pelo presente instrumento nomeia e constitui como seu (sua) bastante Procurador(a)"},
+    {t:".",b:0},
+    {t:"Outorgado (representante legal):",b:1},
+    {t:pessoa("p")},
+    {t:".",b:0},
+    {t:"PODERES:",b:1},
+    {t:"com poderes para representá-lo(a) perante estabelecimentos credenciados no Programa Farmácia Popular do Brasil - PFPB, para fins de solicitação e retirada de medicamentos para tratamento de asma, hipertensão e diabetes fornecidos pelo Programa."},
+    {t:`${g("cidade")}/${g("cuf")}, ${dt}.`},
+    {t:".",b:0},
+    {t:".",b:0},
+    {sig:1}
+  ];
+}
+function render(){
+  $("preview").innerHTML=build().map(i=>i.sig?`<div class="sig">Assinatura do outorgante</div>`:`<p class="${i.a||""}">${i.b?"<strong>"+esc(i.t)+"</strong>":esc(i.t)}</p>`).join("");
+}
+
+// Eventos
+IDS.forEach(id=>{
+  const el=$(id),t=typeOf(id);
+  el.addEventListener("input",()=>{if(mask[t])el.value=mask[t](el.value);if(el.parentElement.classList.contains("bad"))check(id);render()});
+  el.addEventListener("change",()=>{check(id);render()});
+  el.addEventListener("blur",()=>check(id));
+});
+
+function save(blob,name){
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+const FILE="procuracao-farmacia-popular";
+
+$("pdf").onclick=()=>{
+  if(!validateAll())return;
+  const doc=new jspdf.jsPDF({unit:"mm",format:"a4"});
+  const L=25,W=160,LH=6.4;let y=25;
+  doc.setFontSize(14);
+  for(const i of build()){
+    if(i.sig){
+      if(y>240){doc.addPage();y=25}
+      y+=16;doc.line(55,y,155,y);doc.setFont("times","normal");doc.text("Assinatura do outorgante",105,y+6,{align:"center"});continue;
+    }
+    doc.setFont("times",i.b?"bold":"normal");
+    const lines=doc.splitTextToSize(i.t,W);
+    if(y+lines.length*LH>280){doc.addPage();y=25}
+    doc.text(lines,i.a==="c"?105:L,y,i.a==="c"?{align:"center",lineHeightFactor:1.5}:{lineHeightFactor:1.5});
+    y+=lines.length*LH+3;
+  }
+  doc.save(FILE+".pdf");
+};
+
+$("docx").onclick=()=>{
+  if(!validateAll())return;
+  const D=docx,font="Times New Roman",size=14;
+  const kids=build().flatMap(i=>i.sig?[
+    new D.Paragraph({alignment:D.AlignmentType.CENTER,spacing:{before:900},children:[new D.TextRun({text:"_".repeat(48),font,size})]}),
+    new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[new D.TextRun({text:"Assinatura do outorgante",font,size})]})
+  ]:[new D.Paragraph({
+    alignment:i.a==="c"?D.AlignmentType.CENTER:D.AlignmentType.JUSTIFIED,
+    spacing:{after:200,line:360},
+    children:[new D.TextRun({text:i.t,bold:!!i.b,font,size})]
+  })]);
+  const m=1417;
+  const d=new D.Document({sections:[{properties:{page:{margin:{top:m,bottom:m,left:m,right:m}}},children:kids}]});
+  D.Packer.toBlob(d).then(b=>save(b,FILE+".docx"));
+};
+
+$("print").onclick=()=>{
+  if(!validateAll())return;
+  render();window.print();
+};
+
+render();
+</script>
+</body>
+</html>
